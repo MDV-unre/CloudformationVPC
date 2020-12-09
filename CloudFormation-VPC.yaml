@@ -1,0 +1,560 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Network: VPC, Subnets, Internet & NAT gateways"
+
+Metadata:
+ AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "Network Configuration"
+        Parameters:
+          - Environment
+          - VPCBlock
+          - VPCBlock2
+
+      -
+        Label:
+          default: "Subnets CIDR Blocks"
+        Parameters:
+          - PublicSubnetACIDR
+          - PublicSubnetBCIDR
+          - PublicSubnetCCIDR
+          - PrivateSubnetACIDR
+          - PrivateSubnetBCIDR
+          - PrivateSubnetCCIDR
+          - DatabaseSubnetACIDR
+          - DatabaseSubnetBCIDR
+          - DatabaseSubnetCCIDR
+
+Parameters:
+  Environment:
+    Type   : String
+    Default: "MDV"
+
+  VPCBlock:
+    Type   : String
+    Default: "10.10.0.0/16"
+
+  VPCBlock2:
+    Type   : String
+    Default: "192.168.0.0/16"
+
+  PublicSubnetACIDR:
+    Type       : String
+    Default    : "10.10.10.0/24"
+    Description: "Public Subnet-A CIDR"
+
+  PublicSubnetBCIDR:
+    Type       : String
+    Default    : "10.10.20.0/24"
+    Description: "Public Subnet-B CIDR"
+
+  PublicSubnetCCIDR:
+    Type       : String
+    Default    : "10.10.30.0/24"
+    Description: "Public Subnet-C CIDR"
+
+  PrivateSubnetACIDR:
+    Type       : String
+    Default    : "10.10.11.0/24"
+    Description: "Private Subnet-A CIDR"
+
+  PrivateSubnetBCIDR:
+    Type       : String
+    Default    : "10.10.21.0/24"
+    Description: "Private Subnet-B CIDR"
+
+  PrivateSubnetCCIDR:
+    Type       : String
+    Default    : "10.10.31.0/24"
+    Description: "Private Subnet-C CIDR"
+
+  DatabaseSubnetACIDR:
+    Type       : String
+    Default    : "10.10.12.0/24"
+    Description: "Database Subnet-A CIDR"
+
+  DatabaseSubnetBCIDR:
+    Type       : String
+    Default    : "10.10.22.0/24"
+    Description: "Database Subnet-B CIDR"
+
+  DatabaseSubnetCCIDR:
+    Type       : String
+    Default    : "10.10.32.0/24"
+    Description: "Database Subnet-C CIDR"
+
+#++++++++Creating VPC==============
+
+Resources:
+  VPC:
+    Type      : AWS::EC2::VPC
+    Properties:
+      CidrBlock         : !Ref VPCBlock
+      EnableDnsSupport  : true
+      EnableDnsHostnames: true
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "VPC" ] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+#=========Creating Internet Gateway==========
+  InternetGateway:
+    Type      : AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Internet Gateway"] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+  GatewayAttachmentInternet:
+    Type      : AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: VPC
+      InternetGatewayId:
+        Ref: InternetGateway
+
+#=============Creating Subnets=============
+#==============Public Subnets==============
+
+  PublicSubnetA:
+    Type      : AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: VPC
+      CidrBlock       : 10.10.10.0/24
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Public Subnet-A" ] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+  PublicSubnetB:
+    Type      : AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: VPC
+      CidrBlock       : 10.10.20.0/24
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Public Subnet-B" ] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+  PublicSubnetC:
+    Type      : AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: VPC
+      CidrBlock       : 10.10.30.0/24
+      AvailabilityZone: !Select
+        - 2
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Public Subnet-C" ] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+#===================Private Subnets===========
+
+  PrivateSubnetA:
+    Type      : AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: VPC
+      CidrBlock       : 10.10.11.0/24
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Private Subnet-A" ] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+  PrivateSubnetB:
+    Type      : AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: VPC
+      CidrBlock       : 10.10.21.0/24
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Private Subnet-B" ] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+  PrivateSubnetC:
+    Type      : AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: VPC
+      CidrBlock       : 10.10.31.0/24
+      AvailabilityZone: !Select
+        - 2
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Private Subnet-C" ] ]
+        - Key : Owner
+          Value:
+            Ref: Environment
+
+#==============Database Subnets=============
+
+  DatabaseSubnetA:
+    Type      : AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: VPC
+      CidrBlock       : 10.10.12.0/24
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Database Subnet-A" ] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+  DatabaseSubnetB:
+    Type      : AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: VPC
+      CidrBlock       : 10.10.22.0/24
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Database Subnet-B" ] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+  DatabaseSubnetC:
+    Type      : AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: VPC
+      CidrBlock       : 10.10.32.0/24
+      AvailabilityZone: !Select
+        - 2
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Database Subnet-C" ] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+#===============Creating NAT Gateways & Elastic IP============
+#=========================NAT Gateways=========================
+
+  NATGatewayA:
+    Type      : AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+          - EIP1
+          - AllocationId
+      SubnetId:
+        Ref: PublicSubnetA
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "NATGateway-A" ] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+  NATGatewayB:
+    Type      : AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+          - EIP2
+          - AllocationId
+      SubnetId:
+        Ref: PublicSubnetB
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "NATGateway-B" ] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+  NATGatewayC:
+    Type      : AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+          - EIP3
+          - AllocationId
+      SubnetId:
+        Ref: PublicSubnetC
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "NATGateway-C" ] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+#=======================Elastic IP============================
+
+  EIP1:
+     DependsOn : GatewayAttachmentInternet
+     Type      : AWS::EC2::EIP
+     Properties:
+        Domain:
+          Ref: VPC
+
+  EIP2:
+     DependsOn : GatewayAttachmentInternet
+     Type      : AWS::EC2::EIP
+     Properties:
+        Domain:
+          Ref: VPC
+
+  EIP3:
+     DependsOn : GatewayAttachmentInternet
+     Type      : AWS::EC2::EIP
+     Properties:
+        Domain:
+          Ref: VPC
+
+#=======Creating Route Tables==============
+
+#==========Public Route Table==============
+
+  RouteTableForPublicSubnet:
+    Type      : AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Public Route Table"] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+#=============Private Route Table=============
+
+  RouteTableForPrivateSubnetA:
+    Type      : AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Private Route Table-A"] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+  RouteTableForPrivateSubnetB:
+    Type      : AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Private Route Table-B"] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+  RouteTableForPrivateSubnetC:
+    Type      : AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Private Route Table-C"] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+#============Database Route Table=================
+
+  RouteTableForDatabaseSubnet:
+    Type      : AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key   : Name
+          Value: !Join [ " ", [ !Ref Environment, "Database Route Table"] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+
+#============Routes for Route Tables===============
+
+  RoutesForPublicRouteTable:
+    Type      : AWS::EC2::Route
+    DependsOn : GatewayAttachmentInternet
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway
+      RouteTableId:
+        Ref: RouteTableForPublicSubnet
+
+  RoutesForPrivateRouteTableA:
+    Type     : AWS::EC2::Route
+    DependsOn: NATGatewayA
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId:
+        Ref: RouteTableForPrivateSubnetA
+      NatGatewayId:
+        Ref: NATGatewayA
+
+  RoutesForPrivateRouteTableB:
+    Type     : AWS::EC2::Route
+    DependsOn: NATGatewayB
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId:
+        Ref: RouteTableForPrivateSubnetB
+      NatGatewayId:
+        Ref: NATGatewayB
+
+  RoutesForPrivateRouteTableC:
+    Type     : AWS::EC2::Route
+    DependsOn: NATGatewayC
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId:
+        Ref: RouteTableForPrivateSubnetC
+      NatGatewayId:
+        Ref: NATGatewayC
+
+#==========Assosiate Routes for Subnets================
+
+#=============Assosiate Public Table===================
+
+  RouteAssociationPublicA:
+    Type      : AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PublicSubnetA
+      RouteTableId:
+        Ref: RouteTableForPublicSubnet
+
+  RouteAssociationPublicB:
+    Type      : AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PublicSubnetB
+      RouteTableId:
+        Ref: RouteTableForPublicSubnet
+
+  RouteAssociationPublicC:
+    Type      : AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PublicSubnetC
+      RouteTableId:
+        Ref: RouteTableForPublicSubnet
+
+#=============Assosiate Private Table===================
+
+  RouteAssociationPrivateA:
+    Type      : AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PrivateSubnetA
+      RouteTableId:
+        Ref: RouteTableForPrivateSubnetA
+
+  RouteAssociationPrivateB:
+    Type      : AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PrivateSubnetB
+      RouteTableId:
+        Ref: RouteTableForPrivateSubnetB
+
+  RouteAssociationPrivateC:
+    Type      : AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: PrivateSubnetC
+      RouteTableId:
+        Ref: RouteTableForPrivateSubnetC
+
+#=============Assosiate Database Table===================
+
+  RouteAssociationDatabaseA:
+    Type      : AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: DatabaseSubnetA
+      RouteTableId:
+        Ref: RouteTableForDatabaseSubnet
+
+  RouteAssociationDatabaseB:
+    Type      : AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: DatabaseSubnetB
+      RouteTableId:
+        Ref: RouteTableForDatabaseSubnet
+
+  RouteAssociationDatabaseC:
+    Type      : AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: DatabaseSubnetC
+      RouteTableId:
+        Ref: RouteTableForDatabaseSubnet
+
+#===============Creating Security Group================
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key  : Name
+          Value: !Join [ " ", [ !Ref Environment, "Security Group"] ]
+        - Key  : Owner
+          Value:
+            Ref: Environment
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort  : 22
+          ToPort    : 22
+          CidrIp    : 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort  : 22
+          ToPort    : 22
+          CidrIp    : 0.0.0.0/0
